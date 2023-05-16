@@ -1,94 +1,182 @@
-# Electron, TypeScript, MUI (formerly Material-UI), React Boilerplate
+# Electron React Webpack Typescript (Custom Titlebar)
 
-Modern and lightweight boilerplate built with electron, typescript, react, webpack, and mui. This also demonstrates live-reloading and static images.
+A minimal secure boilerplate for writing Desktop Applications using [Electron](https://www.electronjs.org/), [React](https://reactjs.org/), [Webpack](https://webpack.js.org/) & [TypeScript](https://www.typescriptlang.org/) with Custom Titlebar.
 
-![Screenshot](/screenshot-1.png)
 
-## Major technologies
+<br>
+<img src="assets/images/animation.gif" />
 
-- [React.js 18](https://reactjs.org/)
-- [Electron 19](https://www.electronjs.org/)
-- [MUI 5](https://mui.com/) (formerly Material-UI)
-- [Webpack 5](https://webpack.js.org/)
-- Typescript, ESLint, and Prettier are used to improve the developer experience
+Special thanks to [@guasam](https://github.com/guasam) for their custom window titlebar and menus implementations.
 
-## Requires
+<br>
 
-- [Node.js 16.x](https://nodejs.org/en/)
-- [NPM >= 7.x](https://github.com/npm/cli)
+### <img src="https://github.com/guasam/electrovite-react/raw/main/assets/electrovite-round.png" width="32" align="top" /> &nbsp;  Want to use ViteJS instead of Webpack? 
 
-## Recommended tools
+Introducing the [ElectroVite](https://github.com/guasam/electrovite-react) project with a brief description below.
 
-- [Visual Studio Code](https://code.visualstudio.com/)
-  - [Prettier extension](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) (formatting)
-  - [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) (error checking)
-- [NVM](https://github.com/nvm-sh/nvm) (mac only. helps to manage multiple node.js versions on your machine)
+> A prebuilt project for creating desktop apps using Electron, React, ViteJS with blazing fast hot-reload, easy to use custom import aliases & executable builds for distribution.
 
-## Getting Started
 
-1. Download this repo or run the following command to clone it
 
-```sh
-git clone https://github.com/hellosoftware-io/electron-typescript-react-material-ui myapp
+
+<br>
+
+
+# Custom Electron Window Titlebar & Menus etc.
+
+This project includes [electron-window](https://github.com/guasam/electron-window) for creating custom window components.
+
+**Following are the list of features it provides :**
+
+- Custom Titlebar for Electron Window.
+- Easily changable platform specific controls for max/min/close buttons using `windows` or `mac` value for `platform` property with `<WindowFrame>` in renderer.
+- Titlebar menus can show/hide by pressing `alt` or `option` key.
+- Window frame `title` prop displays in titlebar center when menus are toggeled off.
+- Menu entries can be customized in `misc/window/titlebarMenus.ts` file.
+- Menu items and windows controls layout or colors can be customized easily by modifying the `misc/window` modules.
+
+<br><br>
+
+# Core Features
+
+- 🌟 Electron
+- 🌀 TypeScript
+- ⚛️ React
+- 🥗 SASS/SCSS Loader
+- 🛶 LESS Loader (optional)
+- 🎨 CSS Loader
+- 📸 Image Loader
+- 🆎 Font Loader
+- 🧹 ESLint
+- 📦 Electron Forge
+- 📐 Custom Window Frame
+- 📐 Custom Window Titlebar
+- 📐 Custom Window Menubar
+- 🔱 Webpack & Configuration
+- 🧩 Aliases for Project Paths
+- 🔥 React Fast Refresh + Webpack HMR
+- 🌞 Dark Mode + Light Mode (Theme)
+- 🎁 Package Bundling (Distribution / Release)
+
+<br>
+
+## Custom Aliases for Paths
+
+We can use predefined aliases for `import` paths already used in this project. Following are the details:
+
+| Alias         | Target Path                |
+| ------------- | -------------------------- |
+| `@assets`     | `/assets`                  |
+| `@main`       | `/src/main`                |
+| `@renderer`   | `/src/renderer`            |
+| `@common`     | `/src/common`              |
+| `@misc`       | `/misc`                    |
+| `@src`        | `/src`                     |
+| `@components` | `/src/renderer/components` |
+
+<br><br>
+
+# Installation
+
+![status](https://img.shields.io/badge/ERWT-Main%20Version-blue.svg)
+
+Main version of this project contains files structure in separate context for `main` and `renderer`, with custom electron window, titlebar etc.
+
+```bash
+git clone https://github.com/codesbiome/electron-react-webpack-typescript-2023
 ```
 
-2. Navigate to the project root
+<br>
+<div align="center">
+    <b>OR</b>
+</div>
+<br>
 
-```sh
-cd myapp
+![status](https://img.shields.io/badge/ERWT-Minimal%20Version-0a922a.svg)
+
+Minimal version of ERWT contains very simple project files structure, no custom window, no custom titlebar & menus.
+
+```bash
+git clone -b minimal https://github.com/codesbiome/electron-react-webpack-typescript-2023
 ```
 
-3. Using NPM 7+, run the following command to install dependencies
+<br>
 
-```sh
+Install dependencies using [pnpm](https://pnpm.io/) or [yarn](https://www.npmjs.com/package/yarn) or [npm](https://www.npmjs.com/) :
+
+```bash
+# using pnpm
+pnpm install
+
+# or using yarn
+yarn install
+
+# or using npm
 npm install
 ```
 
-4. Run the following command to build and start the development version of your app with live reloading.
+<br />
 
-```sh
-npm run dev
+## Start : Development
+
+To develop and run your application, you need to run following command.
+<br />
+Start electron application for development :
+
+```bash
+yarn start
 ```
 
-## Packaging
+<br />
 
-Run `npm run package` to build and package your electron app.
+## Lint : Development
 
-## Common issues
+To lint application source code using ESLint via this command :
 
-### xcrun: error: invalid active developer path
-
-This is caused when elecron-builder tries to sign a build. Run `xcode-select --install` to install the necessary Xcode tools.
-
-## Folder structure
-
-```
-myapp/
-| - dist/               //- Generated by Webpack automatically
-| - node_modules/
-| - packages/           //- Generated by build script automatically
-| - static/             //- Global static assets
-| | - electron.svg
-| - src/
-| | - main/             //- Backend modules for the Electron app
-| | | - main.ts         //- Entry point of 'electron-main'
-| | - renderer/         //- Frontend React components for the Electron app
-| | | - index.tsx       //- Entry point of 'electron-renderer'
-| - webpack/            //- Webpack config files
-| | - electron.webpack.ts
-| | - react.webpack.ts
-| - .eslintrc           //- ESLint config
-| - .gitignore
-| - package-lock.json
-| - package.json
-| - tsconfig.json       //- TypeScript config
-| - webpack.config.js   //- Webpack config
+```bash
+yarn lint
 ```
 
-## Contributing
+<br />
 
-Pull requests are always welcome 😃.
+## Package : Production
 
-## License
+Customize and package your Electron app with OS-specific bundles (.app, .exe etc)
 
-This project is licensed under the terms of the [MIT license](LICENSE).
+```bash
+yarn package
+```
+
+<br />
+
+## Make : Production
+
+Making is a way of taking your packaged application and making platform specific distributables like DMG, EXE, or Flatpak files (amongst others).
+
+```bash
+yarn make
+```
+
+<br />
+
+## Publish : Production
+
+Publishing is a way of taking the artifacts generated by the `make` command and sending them to a service somewhere for you to distribute or use as updates. (This could be your update server or an S3 bucket)
+
+```bash
+yarn publish
+```
+
+<br />
+
+## Packager & Makers Configuration
+
+This provides an easy way of configuring your packaged application and making platform specific distributables like DMG, EXE, or Flatpak files.
+
+This configurations file is available in :
+
+```bash
+tools/forge/forge.config.js
+```
+
+For further information, you can visit [Electron Forge Configuration](https://www.electronforge.io/configuration)
