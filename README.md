@@ -1,182 +1,86 @@
-# Electron React Webpack Typescript (Custom Titlebar)
-
-A minimal secure boilerplate for writing Desktop Applications using [Electron](https://www.electronjs.org/), [React](https://reactjs.org/), [Webpack](https://webpack.js.org/) & [TypeScript](https://www.typescriptlang.org/) with Custom Titlebar.
-
-
-<br>
-<img src="assets/images/animation.gif" />
-
-Special thanks to [@guasam](https://github.com/guasam) for their custom window titlebar and menus implementations.
-
-<br>
-
-### <img src="https://github.com/guasam/electrovite-react/raw/main/assets/electrovite-round.png" width="32" align="top" /> &nbsp;  Want to use ViteJS instead of Webpack? 
-
-Introducing the [ElectroVite](https://github.com/guasam/electrovite-react) project with a brief description below.
-
-> A prebuilt project for creating desktop apps using Electron, React, ViteJS with blazing fast hot-reload, easy to use custom import aliases & executable builds for distribution.
+# electron-vite-react
+https://www.npmjs.com/package/simple-git
 
 
 
+[![awesome-vite](https://awesome.re/mentioned-badge.svg)](https://github.com/vitejs/awesome-vite)
+![GitHub stars](https://img.shields.io/github/stars/caoxiemeihao/vite-react-electron?color=fa6470)
+![GitHub issues](https://img.shields.io/github/issues/caoxiemeihao/vite-react-electron?color=d8b22d)
+![GitHub license](https://img.shields.io/github/license/caoxiemeihao/vite-react-electron)
+[![Required Node.JS >= 14.18.0 || >=16.0.0](https://img.shields.io/static/v1?label=node&message=14.18.0%20||%20%3E=16.0.0&logo=node.js&color=3f893e)](https://nodejs.org/about/releases)
 
-<br>
+English | [简体中文](README.zh-CN.md)
 
+## 👀 Overview
 
-# Custom Electron Window Titlebar & Menus etc.
+📦 Ready out of the box  
+🎯 Based on the official [template-react-ts](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts), project structure will be familiar to you  
+🌱 Easily extendable and customizable  
+💪 Supports Node.js API in the renderer process  
+🔩 Supports C/C++ native addons  
+🐞 Debugger configuration included  
+🖥 Easy to implement multiple windows  
 
-This project includes [electron-window](https://github.com/guasam/electron-window) for creating custom window components.
+## 🛫 Quick start
 
-**Following are the list of features it provides :**
-
-- Custom Titlebar for Electron Window.
-- Easily changable platform specific controls for max/min/close buttons using `windows` or `mac` value for `platform` property with `<WindowFrame>` in renderer.
-- Titlebar menus can show/hide by pressing `alt` or `option` key.
-- Window frame `title` prop displays in titlebar center when menus are toggeled off.
-- Menu entries can be customized in `misc/window/titlebarMenus.ts` file.
-- Menu items and windows controls layout or colors can be customized easily by modifying the `misc/window` modules.
-
-<br><br>
-
-# Core Features
-
-- 🌟 Electron
-- 🌀 TypeScript
-- ⚛️ React
-- 🥗 SASS/SCSS Loader
-- 🛶 LESS Loader (optional)
-- 🎨 CSS Loader
-- 📸 Image Loader
-- 🆎 Font Loader
-- 🧹 ESLint
-- 📦 Electron Forge
-- 📐 Custom Window Frame
-- 📐 Custom Window Titlebar
-- 📐 Custom Window Menubar
-- 🔱 Webpack & Configuration
-- 🧩 Aliases for Project Paths
-- 🔥 React Fast Refresh + Webpack HMR
-- 🌞 Dark Mode + Light Mode (Theme)
-- 🎁 Package Bundling (Distribution / Release)
-
-<br>
-
-## Custom Aliases for Paths
-
-We can use predefined aliases for `import` paths already used in this project. Following are the details:
-
-| Alias         | Target Path                |
-| ------------- | -------------------------- |
-| `@assets`     | `/assets`                  |
-| `@main`       | `/src/main`                |
-| `@renderer`   | `/src/renderer`            |
-| `@common`     | `/src/common`              |
-| `@misc`       | `/misc`                    |
-| `@src`        | `/src`                     |
-| `@components` | `/src/renderer/components` |
-
-<br><br>
-
-# Installation
-
-![status](https://img.shields.io/badge/ERWT-Main%20Version-blue.svg)
-
-Main version of this project contains files structure in separate context for `main` and `renderer`, with custom electron window, titlebar etc.
-
-```bash
-git clone https://github.com/codesbiome/electron-react-webpack-typescript-2023
+```sh
+npm create electron-vite
 ```
 
-<br>
-<div align="center">
-    <b>OR</b>
-</div>
-<br>
+![electron-vite-react.gif](/electron-vite-react.gif)
 
-![status](https://img.shields.io/badge/ERWT-Minimal%20Version-0a922a.svg)
+## 🐞 Debug
 
-Minimal version of ERWT contains very simple project files structure, no custom window, no custom titlebar & menus.
+![electron-vite-react-debug.gif](/electron-vite-react-debug.gif)
 
-```bash
-git clone -b minimal https://github.com/codesbiome/electron-react-webpack-typescript-2023
+## 📂 Directory structure
+
+Familiar React application structure, just with `electron` folder on the top :wink:  
+*Files in this folder will be separated from your React application and built into `dist-electron`*  
+
+```tree
+├── electron                                 Electron-related code
+│   ├── main                                 Main-process source code
+│   └── preload                              Preload-scripts source code
+│
+├── release                                  Generated after production build, contains executables
+│   └── {version}
+│       ├── {os}-{os_arch}                   Contains unpacked application executable
+│       └── {app_name}_{version}.{ext}       Installer for the application
+│
+├── public                                   Static assets
+└── src                                      Renderer source code, your React application
 ```
 
-<br>
+<!--
+## 🚨 Be aware
 
-Install dependencies using [pnpm](https://pnpm.io/) or [yarn](https://www.npmjs.com/package/yarn) or [npm](https://www.npmjs.com/) :
+This template integrates Node.js API to the renderer process by default. If you want to follow **Electron Security Concerns** you might want to disable this feature. You will have to expose needed API by yourself.  
 
-```bash
-# using pnpm
-pnpm install
+To get started, remove the option as shown below. This will [modify the Vite configuration and disable this feature](https://github.com/electron-vite/vite-plugin-electron-renderer#config-presets-opinionated).
 
-# or using yarn
-yarn install
+```diff
+# vite.config.ts
 
-# or using npm
-npm install
+export default {
+  plugins: [
+    ...
+-   // Use Node.js API in the Renderer-process
+-   renderer({
+-     nodeIntegration: true,
+-   }),
+    ...
+  ],
+}
 ```
+-->
 
-<br />
+## 🔧 Additional features
 
-## Start : Development
+1. electron-updater 👉 [see docs](src/components/update/README.md)
+1. playwright
 
-To develop and run your application, you need to run following command.
-<br />
-Start electron application for development :
+## ❔ FAQ
 
-```bash
-yarn start
-```
-
-<br />
-
-## Lint : Development
-
-To lint application source code using ESLint via this command :
-
-```bash
-yarn lint
-```
-
-<br />
-
-## Package : Production
-
-Customize and package your Electron app with OS-specific bundles (.app, .exe etc)
-
-```bash
-yarn package
-```
-
-<br />
-
-## Make : Production
-
-Making is a way of taking your packaged application and making platform specific distributables like DMG, EXE, or Flatpak files (amongst others).
-
-```bash
-yarn make
-```
-
-<br />
-
-## Publish : Production
-
-Publishing is a way of taking the artifacts generated by the `make` command and sending them to a service somewhere for you to distribute or use as updates. (This could be your update server or an S3 bucket)
-
-```bash
-yarn publish
-```
-
-<br />
-
-## Packager & Makers Configuration
-
-This provides an easy way of configuring your packaged application and making platform specific distributables like DMG, EXE, or Flatpak files.
-
-This configurations file is available in :
-
-```bash
-tools/forge/forge.config.js
-```
-
-For further information, you can visit [Electron Forge Configuration](https://www.electronforge.io/configuration)
+- [C/C++ addons, Node.js modules - Pre-Bundling](https://github.com/electron-vite/vite-plugin-electron-renderer#dependency-pre-bundling)
+- [dependencies vs devDependencies](https://github.com/electron-vite/vite-plugin-electron-renderer#dependencies-vs-devdependencies)
