@@ -36,6 +36,12 @@ export class GitFn {
     setBranch(branch: string) {
         return this.repogit.checkout(branch);
     }
+    reset(arg?: string[]) {
+        return this.repogit.reset(arg);
+    }
+    hard_reset(branch: string) {
+        return this.reset(["--hard", `origin/${branch}`]);
+    }
 
     getLogs() {
         return this.repogit.log({

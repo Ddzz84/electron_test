@@ -3,7 +3,11 @@ import { ipcRenderer } from "electron";
 import { StatusBar } from "@/components/status-bar";
 import { useStore, useStoreDispatch } from "./components/store/contextStore";
 import "./assets/App.scss";
-import { actionStoreType, repositoryType } from "./components/store/store";
+import {
+    actionStoreType,
+    commitType,
+    repositoryType,
+} from "./components/store/store";
 import { Sidebar } from "./components/sidebar";
 import { Dashboard } from "./components/dashboard";
 import { ClipLoader } from "react-spinners";
@@ -77,6 +81,24 @@ const listenerGit = (dispatch: React.Dispatch<actionStoreType>) => {
                 ],
             },
         });
+    });
+
+    ipcRenderer.once("send-log", (_e, arg) => {
+        const logs = arg.logs as commitType[];
+        let repo: repositoryType = {
+            name: arg.repo_name,
+            branchs: arg.branchs,
+            current_branch: arg.branch,
+            status: arg.status,
+        };
+        if (repo) {
+            repo.commits = logs;
+            repo.branchs = arg.branchs;
+            dispatch({
+                type: "add-log",
+                payload: { repositories: [repo] },
+            });
+        }
     });
 };
 

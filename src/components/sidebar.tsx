@@ -15,22 +15,7 @@ export const Sidebar: React.FC = () => {
 
     useEffect(() => {
         if (store?.select_repo) {
-            ipcRenderer.send("get-log", { repo: store.select_repo });
-
-            ipcRenderer.once("send-log", (e, arg) => {
-                const logs = arg.logs as commitType[];
-                let repo = store.repositories.find(
-                    (r) => r.name === store.select_repo
-                );
-                if (repo) {
-                    repo.commits = logs;
-                    repo.branchs = arg.branchs;
-                    dispatch({
-                        type: "add-log",
-                        payload: { repositories: [repo] },
-                    });
-                }
-            });
+            ipcRenderer.send("get-log", { repo_name: store.select_repo });
         }
     }, [store?.select_repo]);
 
@@ -52,12 +37,11 @@ export const Sidebar: React.FC = () => {
         });
     };
 
-    const ItemMenu: React.FC<{ select_repo: string }> = ({ select_repo }) => (
-        <li
-            className={
-                select_repo === store?.select_repo ? "bordered font-bold" : ""
-            }
-        >
+    const ItemMenu: React.FC<{ select_repo: string; className: string }> = ({
+        select_repo,
+        className,
+    }) => (
+        <li className={className}>
             <a
                 href="#"
                 onClick={() =>
@@ -104,7 +88,7 @@ export const Sidebar: React.FC = () => {
                                 <ClipLoader
                                     color="#fff"
                                     size={16}
-                                    className="float-right mr-2"
+                                    className="float-right ml-2"
                                 />
                             )}
                         </button>
@@ -115,11 +99,18 @@ export const Sidebar: React.FC = () => {
                 </ul>
                 <hr />
                 {Boolean(store?.repositories.length) && (
-                    <ul className="menu menu-compact mt-2 text-sm text-slate-50">
-                        <ItemMenu select_repo={parent_repo?.name || ""} />
+                    <ul className="menu menu-compact mt-2  text-slate-50">
+                        <ItemMenu
+                            select_repo={parent_repo?.name || ""}
+                            className={
+                                "text-sm " +
+                                (parent_repo?.name === store?.select_repo &&
+                                    "bordered font-bold")
+                            }
+                        />
                     </ul>
                 )}
-                <ul className="menu menu-compact ml-3 text-sm text-slate-200">
+                <ul className="menu menu-compact ml-3 text-slate-200">
                     {store?.repositories
                         .filter((r) => r.sub)
                         .sort((a, b) => (a.name > b.name ? 1 : -1))
@@ -127,6 +118,11 @@ export const Sidebar: React.FC = () => {
                             <ItemMenu
                                 key={repo.name}
                                 select_repo={repo?.name || ""}
+                                className={
+                                    "text-xs " +
+                                    (repo?.name === store?.select_repo &&
+                                        "bordered font-bold")
+                                }
                             />
                         ))}
                 </ul>

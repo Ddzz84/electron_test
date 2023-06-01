@@ -1,11 +1,27 @@
+import { ipcRenderer } from "electron";
 import { useStore } from "./store/contextStore";
 import { repositoryType } from "./store/store";
+import { ClipLoader } from "react-spinners";
+import { useEffect, useState } from "react";
 
 export const Dashboard = () => {
     const store = useStore();
+    const [loading, setLoading] = useState(false);
     const current_repo = store?.repositories.find(
         (r) => r.name === store.select_repo
     );
+
+    useEffect(() => {
+        setLoading(false);
+    }, [current_repo?.current_branch]);
+
+    const repo_cmd = (cmd: string, arg?: string) => {
+        ipcRenderer.send("repo-cmd", {
+            repo_name: current_repo?.name,
+            cmd,
+            arg: [arg ?? current_repo?.current_branch],
+        });
+    };
 
     console.log(current_repo);
 
@@ -18,19 +34,48 @@ export const Dashboard = () => {
                         .map((b) => (
                             <button
                                 key={b}
+                                onClick={() => {
+                                    setLoading(true);
+                                    current_repo.current_branch !== b &&
+                                        repo_cmd("checkout", b);
+                                }}
                                 className={`btn btn-xs btn-outline ${
                                     current_repo.current_branch === b &&
                                     "btn-active"
                                 }`}
                             >
-                                {b}
+                                {b}{" "}
+                                {loading && (
+                                    <ClipLoader
+                                        color="currentColor"
+                                        size={16}
+                                        className="float-right ml-2"
+                                    />
+                                )}
                             </button>
                         ))}
                 </div>
                 <div className="btn-group ml-2">
-                    <button className="btn btn-xs btn-info">Pull</button>
-                    <button className="btn btn-xs btn-success">Push</button>
-                    <button className="btn btn-xs btn-error">Hard Reset</button>
+                    <button
+                        className="btn btn-xs btn-outline btn-info"
+                        onClick={() => repo_cmd("pull")}
+                    >
+                        Pull
+                    </button>
+                    <button className="btn btn-xs btn-outline btn-success">
+                        Push
+                    </button>
+                    <button
+                        className="btn btn-xs btn-outline btn-error"
+                        onClick={() =>
+                            confirm(
+                                `Reset hard ${current_repo?.current_branch}? 
+                                Delete all your unstage files`
+                            ) && repo_cmd("h_reset")
+                        }
+                    >
+                        Hard Reset
+                    </button>
                 </div>
                 <select
                     className="select select-xs select-bordered max-w-xs"

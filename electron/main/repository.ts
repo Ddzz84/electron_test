@@ -23,10 +23,8 @@ export function repository(win: Electron.BrowserWindow) {
                 const submodule = fs.existsSync(`${dir}/.gitmodules`);
                 let sublist: repositoryType[] = [];
                 repositories = [new GitFn(dir)];
-                const { current, ...status } = get_status(
-                    await repositories[0].getStatus()
-                );
-
+                const { current } = await repositories[0].fetch();
+                // get subrepository
                 if (submodule) {
                     let sub_repo = (await repositories[0].getSubmodule())
                         .split("\n")
@@ -50,7 +48,7 @@ export function repository(win: Electron.BrowserWindow) {
                         });
                     }
                 }
-
+                //
                 send_status_msg(
                     event,
                     `branch: ${current}${
@@ -61,7 +59,7 @@ export function repository(win: Electron.BrowserWindow) {
                     repo: {
                         name: dir.split(/[\/\\]/).pop(),
                         current_branch: current,
-                        status,
+                        status: get_status(await repositories[0].getStatus()),
                         branchs: (await repositories[0].getBranchs()).all,
                         sub: false,
                     } as repositoryType,
@@ -76,22 +74,30 @@ export function repository(win: Electron.BrowserWindow) {
         }
     });
 
-    ipcMain.on("get-log", async (event, arg) => {
-        const repo = repositories.find((r) => r.name === arg.repo);
-        let branchs = await repo?.getBranchs();
+    ipcMain.on("get-log", async (e, { repo_name }) => {
+        try {
+            e.sender.send("send-log", { ...(await get_log(repo_name)) });
+        } catch (err) {
+            send_status_msg(e, `Error - get log: ${err}`);
+            console.log({ err });
+            // force delete file
+            // if (/fatal: Unable to create \'(.*)\'/.test(`${err}`)) {
+            //     const path = `${err}`.match(
+            //         /fatal: Unable to create \'(.*).lock\'/
+            //     );
+            //     if (path?.[1]) {
+            //         console.log(fs.rmSync(path[1], { force: true }));
+            //         repositories
+            //             .find((r) => r.name === repo_name)
+            //             ?.reset(["HEAD", "."]);
+            //         e.sender.send("send-log", {
+            //             ...(await get_log(repo_name)),
+            //         });
+            //     }
+            // }
 
-        let logs = parseLogs((await repo?.getLogs())?.all);
-        for (const b of branchs?.all || []) {
-            if (b !== branchs?.current && !b.includes("origin")) {
-                repo?.setBranch(b);
-                logs = [...logs, ...parseLogs((await repo?.getLogs())?.all)];
-            }
+            //fatal: Unable to create '/home/WIP/arca24-client-submodule/.git/modules/arca24-back/index.lock': File exists
         }
-        repo?.setBranch("staging");
-        event.sender.send("send-log", {
-            logs,
-            branchs: branchs?.all,
-        });
     });
 
     ipcMain.on("branch-lib", async (event, { branch }) => {
@@ -128,6 +134,48 @@ export function repository(win: Electron.BrowserWindow) {
             `Completed - set branch ${branch} for each repository`
         );
     });
+
+    ipcMain.on("repo-cmd", async (e, { repo_name, cmd, arg }) => {
+        console.log(repo_name, cmd, arg);
+        const repo = repositories.find((r) => r.name === repo_name);
+        try {
+            switch (cmd) {
+                case "h_reset":
+                    const status = await repo?.getStatus();
+                    await repo?.reset();
+                    console.log(
+                        status?.current &&
+                            (await repo?.hard_reset(status?.current))
+                    );
+                    e.sender.send("send-log", {
+                        ...(await get_log(repo_name)),
+                    });
+                    return send_status_msg(
+                        e,
+                        `Reset Hard for ${repo?.name} Completed`
+                    );
+                case "pull":
+                    await repo?.pull();
+                    e.sender.send("send-log", {
+                        ...(await get_log(repo_name)),
+                    });
+                    return send_status_msg(e, `Pull ${repo?.name} Completed`);
+                case "checkout":
+                    console.log(await repo?.setBranch(arg[0]));
+                    console.log(await repo?.pull());
+                    const logs = await get_log(repo_name);
+                    console.log(logs);
+                    e.sender.send("send-log", { ...logs });
+
+                    return send_status_msg(
+                        e,
+                        `Checkout ${repo?.name} - ${arg[0]} Completed`
+                    );
+            }
+        } catch (err) {
+            send_status_msg(e, `Error repo-cmd: ${err}`);
+        }
+    });
 }
 
 const parseLogs = (l: any) =>
@@ -158,3 +206,27 @@ const parseLogs = (l: any) =>
               stats: c.stats.split(","),
           }))
         : [];
+
+const get_log = async (repo_name: string) => {
+    const repo = repositories.find((r) => r.name === repo_name);
+    let status = await repo?.getStatus();
+    let branchs = await repo?.getBranchs();
+
+    let logs = parseLogs((await repo?.getLogs())?.all);
+    for (const b of branchs?.all || []) {
+        //if (b !== branchs?.current && !b.includes("origin")) {
+        await repo?.setBranch(b);
+        logs = [...logs, ...parseLogs((await repo?.getLogs())?.all)];
+    }
+    await repo?.setBranch(status?.current || "");
+    const { not_added, conflicted, created, deleted, modified } =
+        (await repo?.getStatus()) || {};
+
+    return {
+        repo_name,
+        logs,
+        branchs: branchs?.all,
+        branch: status?.current,
+        status: { not_added, conflicted, created, deleted, modified },
+    };
+};
