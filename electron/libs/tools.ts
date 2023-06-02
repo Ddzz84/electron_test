@@ -12,3 +12,7 @@ export const get_status = (status: StatusResult) => {
         current,
     };
 };
+
+export function delay(time: number) {
+    return new Promise((resolve) => setTimeout(resolve, time));
+}

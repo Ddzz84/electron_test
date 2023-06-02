@@ -3,9 +3,42 @@ import fs from "fs";
 import { GitFn } from "../libs/gitfn";
 import { send_status_msg } from "./status-message";
 import { repositoryType } from "@/components/store/store";
-import { get_status } from "../libs/tools";
+import { delay, get_status } from "../libs/tools";
+import { BranchSummary } from "simple-git";
 
-let repositories: GitFn[] = [];
+class GitRepositories {
+    git_occupated = false;
+    repo_list: GitFn[] = [];
+
+    add_repo(dir: string) {
+        this.repo_list.push(new GitFn(dir));
+    }
+
+    async exec(
+        action: Exclude<keyof GitFn, "repogit" | "name">,
+        repo_name: string | number,
+        arg?: any
+    ) {
+        if (!this.git_occupated) {
+            this.git_occupated = true;
+            const repo =
+                typeof repo_name === "string"
+                    ? this.repo_list.find((r) => r.name === repo_name)
+                    : this.repo_list[repo_name];
+
+            const risp = repo && (await repo[action](arg));
+            this.git_occupated = false;
+            return risp;
+        } else {
+            await delay(1000);
+            this.exec(action, repo_name, arg);
+        }
+    }
+
+    async execAll() {}
+}
+
+const repositories = new GitRepositories();
 
 export function repository(win: Electron.BrowserWindow) {
     //
@@ -22,11 +55,20 @@ export function repository(win: Electron.BrowserWindow) {
             try {
                 const submodule = fs.existsSync(`${dir}/.gitmodules`);
                 let sublist: repositoryType[] = [];
-                repositories = [new GitFn(dir)];
-                const { current } = await repositories[0].fetch();
+                repositories.add_repo(dir);
+
+                const { current } = (await repositories.exec(
+                    "fetch",
+                    0
+                )) as BranchSummary;
                 // get subrepository
                 if (submodule) {
-                    let sub_repo = (await repositories[0].getSubmodule())
+                    let sub_repo = (
+                        await (repositories.exec(
+                            "getSubmodule",
+                            0
+                        ) as ReturnType<GitFn["getSubmodule"]>)
+                    )
                         .split("\n")
                         .filter(Boolean)
                         .map((str: string) => {
@@ -36,9 +78,12 @@ export function repository(win: Electron.BrowserWindow) {
                             return s[2];
                         });
                     for (let i = 0; i < sub_repo.length; i++) {
-                        repositories.push(new GitFn(`${dir}/${sub_repo[i]}`));
+                        repositories.add_repo(`${dir}/${sub_repo[i]}`);
                         const { current, ...status } = get_status(
-                            await repositories[i + 1].getStatus()
+                            await (repositories.exec(
+                                "getStatus",
+                                i + 1
+                            ) as ReturnType<GitFn["getStatus"]>)
                         );
                         sublist.push({
                             current_branch: current || "",
@@ -59,14 +104,34 @@ export function repository(win: Electron.BrowserWindow) {
                     repo: {
                         name: dir.split(/[\/\\]/).pop(),
                         current_branch: current,
-                        status: get_status(await repositories[0].getStatus()),
-                        branchs: (await repositories[0].getBranchs()).all,
+                        status: get_status(
+                            await (repositories.exec(
+                                "getStatus",
+                                0
+                            ) as ReturnType<GitFn["getStatus"]>)
+                        ),
+                        branchs: (
+                            await (repositories.exec(
+                                "getBranchs",
+                                0
+                            ) as ReturnType<GitFn["getBranchs"]>)
+                        ).all,
                         sub: false,
                     } as repositoryType,
                     sublist,
                 });
 
-                event.sender.send("select-folder", { dir });
+                event.sender.send("select-folder", {
+                    dir,
+                    user: Object.values(
+                        (
+                            await (repositories.exec(
+                                "getConfig",
+                                0
+                            ) as ReturnType<GitFn["getConfig"]>)
+                        ).values
+                    )[0]["user.name"],
+                });
                 send_status_msg(event, dir);
             } catch (e) {
                 send_status_msg(event, `! read folder ${e}`);
@@ -80,23 +145,6 @@ export function repository(win: Electron.BrowserWindow) {
         } catch (err) {
             send_status_msg(e, `Error - get log: ${err}`);
             console.log({ err });
-            // force delete file
-            // if (/fatal: Unable to create \'(.*)\'/.test(`${err}`)) {
-            //     const path = `${err}`.match(
-            //         /fatal: Unable to create \'(.*).lock\'/
-            //     );
-            //     if (path?.[1]) {
-            //         console.log(fs.rmSync(path[1], { force: true }));
-            //         repositories
-            //             .find((r) => r.name === repo_name)
-            //             ?.reset(["HEAD", "."]);
-            //         e.sender.send("send-log", {
-            //             ...(await get_log(repo_name)),
-            //         });
-            //     }
-            // }
-
-            //fatal: Unable to create '/home/WIP/arca24-client-submodule/.git/modules/arca24-back/index.lock': File exists
         }
     });
 
@@ -136,11 +184,10 @@ export function repository(win: Electron.BrowserWindow) {
     });
 
     ipcMain.on("repo-cmd", async (e, { repo_name, cmd, arg }) => {
-        console.log(repo_name, cmd, arg);
-        const repo = repositories.find((r) => r.name === repo_name);
+        const repo = repositories.exec.find((r) => r.name === repo_name);
         try {
             switch (cmd) {
-                case "h_reset":
+                case "h_reset": {
                     const status = await repo?.getStatus();
                     await repo?.reset();
                     console.log(
@@ -154,23 +201,28 @@ export function repository(win: Electron.BrowserWindow) {
                         e,
                         `Reset Hard for ${repo?.name} Completed`
                     );
-                case "pull":
+                }
+                case "pull": {
                     await repo?.pull();
                     e.sender.send("send-log", {
                         ...(await get_log(repo_name)),
                     });
                     return send_status_msg(e, `Pull ${repo?.name} Completed`);
-                case "checkout":
-                    console.log(await repo?.setBranch(arg[0]));
-                    console.log(await repo?.pull());
+                }
+                case "checkout": {
+                    await repo?.setBranch(arg[0]);
+                    await repo?.pull();
                     const logs = await get_log(repo_name);
-                    console.log(logs);
-                    e.sender.send("send-log", { ...logs });
+
+                    e.sender.send("send-log", {
+                        ...logs,
+                    });
 
                     return send_status_msg(
                         e,
                         `Checkout ${repo?.name} - ${arg[0]} Completed`
                     );
+                }
             }
         } catch (err) {
             send_status_msg(e, `Error repo-cmd: ${err}`);

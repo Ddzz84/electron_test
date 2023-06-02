@@ -22,6 +22,9 @@ const App = () => {
     const dispatch = useStoreDispatch();
 
     useEffect(() => listenerGit(dispatch), []);
+    useEffect(() => {
+        if (store?.select_repo) console.log(store?.select_repo);
+    }, [store?.select_repo]);
 
     return (
         <div className="flex flex-row min-h-screen bg-gray-100 text-gray-800">
@@ -83,7 +86,7 @@ const listenerGit = (dispatch: React.Dispatch<actionStoreType>) => {
         });
     });
 
-    ipcRenderer.once("send-log", (_e, arg) => {
+    ipcRenderer.on("send-log", (_e, arg) => {
         const logs = arg.logs as commitType[];
         let repo: repositoryType = {
             name: arg.repo_name,

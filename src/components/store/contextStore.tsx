@@ -46,7 +46,7 @@ function storeReducer(store: storeType, action: actionStoreType): storeType {
             storeData.set("last_folders", last_folders);
             return {
                 ...store,
-                folder: action.payload.folder || "",
+                ...action.payload,
                 settings: {
                     last_folders,
                 },
@@ -126,6 +126,7 @@ function storeReducer(store: storeType, action: actionStoreType): storeType {
 
 const initialGit: storeType = {
     folder: "",
+    user: "",
     output: [],
     status_message: ["init completed", "select folder for start.."],
     repositories: [],

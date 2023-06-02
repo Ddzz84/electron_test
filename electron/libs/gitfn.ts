@@ -9,6 +9,11 @@ export class GitFn {
         this.name = folder.split(/[\/\\]/g).pop() || "";
     }
 
+    getConfig() {
+        //this.repogit.listConfig().then((r) => console.log(r));
+        return this.repogit.listConfig();
+    }
+
     fetch() {
         this.repogit.fetch();
         return this.repogit.branch();

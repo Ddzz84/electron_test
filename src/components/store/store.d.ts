@@ -23,6 +23,7 @@ export type repositoryType = {
 
 export type storeType = {
     folder: string;
+    user: string;
     output: string[];
     status_message: string[];
     repositories: repositoryType[];

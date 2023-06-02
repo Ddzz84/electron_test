@@ -6,13 +6,13 @@ import { useEffect, useState } from "react";
 
 export const Dashboard = () => {
     const store = useStore();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState("");
     const current_repo = store?.repositories.find(
         (r) => r.name === store.select_repo
     );
 
     useEffect(() => {
-        setLoading(false);
+        setLoading("");
     }, [current_repo?.current_branch]);
 
     const repo_cmd = (cmd: string, arg?: string) => {
@@ -22,8 +22,6 @@ export const Dashboard = () => {
             arg: [arg ?? current_repo?.current_branch],
         });
     };
-
-    console.log(current_repo);
 
     return (
         <div className="content p-2">
@@ -35,7 +33,7 @@ export const Dashboard = () => {
                             <button
                                 key={b}
                                 onClick={() => {
-                                    setLoading(true);
+                                    setLoading(b);
                                     current_repo.current_branch !== b &&
                                         repo_cmd("checkout", b);
                                 }}
@@ -45,7 +43,7 @@ export const Dashboard = () => {
                                 }`}
                             >
                                 {b}{" "}
-                                {loading && (
+                                {b === loading && (
                                     <ClipLoader
                                         color="currentColor"
                                         size={16}

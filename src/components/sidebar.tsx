@@ -5,19 +5,12 @@ import { ClipLoader } from "react-spinners";
 import { ipcRenderer } from "electron";
 
 import logoArca from "../assets/logo.webp";
-import { commitType } from "./store/store";
 
 export const Sidebar: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const dispatch = useStoreDispatch();
     const store = useStore();
     const parent_repo = store?.repositories.find((r) => !r.sub);
-
-    useEffect(() => {
-        if (store?.select_repo) {
-            ipcRenderer.send("get-log", { repo_name: store.select_repo });
-        }
-    }, [store?.select_repo]);
 
     const open_folder = () => {
         setLoading(true);
@@ -29,29 +22,42 @@ export const Sidebar: React.FC = () => {
         });
         ipcRenderer.send("choose-folder");
         ipcRenderer.once("select-folder", (_e, d) => {
+            console.log(d);
             dispatch({
                 type: "change-folder",
-                payload: { folder: d.dir },
+                payload: { folder: d.dir, user: d.user },
             });
             setLoading(false);
         });
     };
 
-    const ItemMenu: React.FC<{ select_repo: string; className: string }> = ({
-        select_repo,
-        className,
-    }) => (
+    const ItemMenu: React.FC<{
+        select_repo: string;
+        className: string;
+        branch: string;
+    }> = ({ select_repo, className, branch }) => (
         <li className={className}>
             <a
                 href="#"
-                onClick={() =>
+                className="indicator w-full"
+                onClick={() => {
                     dispatch({
                         type: "select-repo",
                         payload: { select_repo },
-                    })
-                }
+                    });
+                    console.log("click repo", select_repo);
+                    //  ipcRenderer.send("get-log", { repo_name: select_repo });
+                }}
             >
-                {select_repo}
+                <span
+                    className={`indicator-item indicator-bottom ${
+                        parent_repo?.current_branch !== branch &&
+                        "bg-error text-slate-800"
+                    } badge badge-xs badge-secondary mr-4 `}
+                >
+                    <small>{branch}</small>
+                </span>
+                <div className="grid place-items-center">{select_repo}</div>
             </a>
         </li>
     );
@@ -72,6 +78,7 @@ export const Sidebar: React.FC = () => {
                     </a>
                 </div>
             </div>
+            <small className="px-4 text-slate-50">user: {store?.user}</small>
             <div className="sidebar-content px-4 py-6">
                 <ul className="flex flex-col w-full mb-2">
                     <li className="my-px">
@@ -102,6 +109,7 @@ export const Sidebar: React.FC = () => {
                     <ul className="menu menu-compact mt-2  text-slate-50">
                         <ItemMenu
                             select_repo={parent_repo?.name || ""}
+                            branch={parent_repo?.current_branch || ""}
                             className={
                                 "text-sm " +
                                 (parent_repo?.name === store?.select_repo &&
@@ -117,6 +125,7 @@ export const Sidebar: React.FC = () => {
                         .map((repo) => (
                             <ItemMenu
                                 key={repo.name}
+                                branch={repo?.current_branch || ""}
                                 select_repo={repo?.name || ""}
                                 className={
                                     "text-xs " +
