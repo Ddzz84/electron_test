@@ -14,6 +14,10 @@ class GitRepositories {
         this.repo_list.push(new GitFn(dir));
     }
 
+    list_name() {
+        return this.repo_list.map((r) => r.name);
+    }
+
     async exec(
         action: Exclude<keyof GitFn, "repogit" | "name">,
         repo_name: string | number,
@@ -35,10 +39,22 @@ class GitRepositories {
         }
     }
 
-    async execAll() {}
+    async execAll(action: Exclude<keyof GitFn, "repogit" | "name">, arg?: any) {
+        if (!this.git_occupated) {
+            this.git_occupated = true;
+            const resp = this.repo_list.map(async (repo) => {
+                return repo && (await repo[action](arg));
+            });
+            this.git_occupated = false;
+            return resp;
+        } else {
+            await delay(1000);
+            this.execAll(action, arg);
+        }
+    }
 }
 
-const repositories = new GitRepositories();
+export const repositories = new GitRepositories();
 
 export function repository(win: Electron.BrowserWindow) {
     //
@@ -149,21 +165,30 @@ export function repository(win: Electron.BrowserWindow) {
     });
 
     ipcMain.on("branch-lib", async (event, { branch }) => {
-        const list_repo = repositories.map((r) => r.name);
-        for (const repo of repositories) {
-            const status = await repo.getStatus();
+        const list_repo = repositories.list_name();
+        const list_repo_status = (await repositories.execAll(
+            "getStatus"
+        )) as ReturnType<GitFn["getStatus"]>[];
 
+        for (const repo_name of list_repo) {
+            const status = await (repositories.exec(
+                "getStatus",
+                repo_name
+            ) as ReturnType<GitFn["getStatus"]>);
             if (
                 status.files.length === 0 ||
                 (status.modified.length > 0 &&
                     status.modified.every((f) => list_repo.includes(f)))
             ) {
-                await repo.setBranch(branch);
-                await repo.pull();
-                const status = await repo.getStatus();
+                await repositories.exec("setBranch", repo_name, branch);
+                await repositories.exec("pull", repo_name);
+                const status = await (repositories.exec(
+                    "getStatus",
+                    repo_name
+                ) as ReturnType<GitFn["getStatus"]>);
                 event.sender.send("update-project", {
                     branch,
-                    name: repo.name,
+                    name: repo_name,
                     status: {
                         created: status.created,
                         deleted: status.deleted,
@@ -173,7 +198,7 @@ export function repository(win: Electron.BrowserWindow) {
             } else {
                 send_status_msg(
                     event,
-                    `Warning, founded ${status.files.length} files changes in ${repo.name}`
+                    `Warning, founded ${status.files.length} files changes in ${repo_name}`
                 );
             }
         }
@@ -184,34 +209,34 @@ export function repository(win: Electron.BrowserWindow) {
     });
 
     ipcMain.on("repo-cmd", async (e, { repo_name, cmd, arg }) => {
-        const repo = repositories.exec.find((r) => r.name === repo_name);
         try {
             switch (cmd) {
                 case "h_reset": {
-                    const status = await repo?.getStatus();
-                    await repo?.reset();
-                    console.log(
-                        status?.current &&
-                            (await repo?.hard_reset(status?.current))
-                    );
+                    const status = await (repositories.exec(
+                        "getStatus",
+                        repo_name
+                    ) as ReturnType<GitFn["getStatus"]>);
+                    await repositories.exec("reset", repo_name);
+                    await repositories.exec("hard_reset", repo_name);
                     e.sender.send("send-log", {
                         ...(await get_log(repo_name)),
                     });
                     return send_status_msg(
                         e,
-                        `Reset Hard for ${repo?.name} Completed`
+                        `Reset Hard for ${repo_name} Completed`
                     );
                 }
                 case "pull": {
-                    await repo?.pull();
+                    await repositories.exec("pull", repo_name);
                     e.sender.send("send-log", {
                         ...(await get_log(repo_name)),
                     });
-                    return send_status_msg(e, `Pull ${repo?.name} Completed`);
+                    return send_status_msg(e, `Pull ${repo_name} Completed`);
                 }
                 case "checkout": {
-                    await repo?.setBranch(arg[0]);
-                    await repo?.pull();
+                    await repositories.exec("setBranch", repo_name, arg[0]);
+                    await repositories.exec("pull", repo_name);
+
                     const logs = await get_log(repo_name);
 
                     e.sender.send("send-log", {
@@ -220,7 +245,7 @@ export function repository(win: Electron.BrowserWindow) {
 
                     return send_status_msg(
                         e,
-                        `Checkout ${repo?.name} - ${arg[0]} Completed`
+                        `Checkout ${repo_name} - ${arg[0]} Completed`
                     );
                 }
             }
@@ -229,6 +254,14 @@ export function repository(win: Electron.BrowserWindow) {
         }
     });
 }
+
+ipcMain.on("new-branch", (_e, { branch, repositories }) => {
+    if (`${branch}`.includes("hotfix")) {
+        // form master
+    } else {
+        // from staging
+    }
+});
 
 const parseLogs = (l: any) =>
     Array.isArray(l)
@@ -260,25 +293,47 @@ const parseLogs = (l: any) =>
         : [];
 
 const get_log = async (repo_name: string) => {
-    const repo = repositories.find((r) => r.name === repo_name);
-    let status = await repo?.getStatus();
-    let branchs = await repo?.getBranchs();
+    let status = await (repositories.exec("getStatus", repo_name) as ReturnType<
+        GitFn["getStatus"]
+    >);
+    let branchs = await (repositories.exec(
+        "getBranchs",
+        repo_name
+    ) as ReturnType<GitFn["getBranchs"]>);
 
-    let logs = parseLogs((await repo?.getLogs())?.all);
+    let logs = parseLogs(
+        (
+            await (repositories.exec("getLogs", repo_name) as ReturnType<
+                GitFn["getLogs"]
+            >)
+        )?.all
+    );
     for (const b of branchs?.all || []) {
-        //if (b !== branchs?.current && !b.includes("origin")) {
-        await repo?.setBranch(b);
-        logs = [...logs, ...parseLogs((await repo?.getLogs())?.all)];
+        await repositories.exec("setBranch", repo_name, b);
+        logs = [
+            ...logs,
+            ...parseLogs(
+                (
+                    await (repositories.exec(
+                        "getLogs",
+                        repo_name
+                    ) as ReturnType<GitFn["getLogs"]>)
+                )?.all
+            ),
+        ];
     }
-    await repo?.setBranch(status?.current || "");
+    await repositories.exec("setBranch", repo_name, status?.current);
+
     const { not_added, conflicted, created, deleted, modified } =
-        (await repo?.getStatus()) || {};
+        (await (repositories.exec("getStatus", repo_name) as ReturnType<
+            GitFn["getStatus"]
+        >)) || {};
 
     return {
         repo_name,
         logs,
         branchs: branchs?.all,
-        branch: status?.current,
+        current_branch: status?.current,
         status: { not_added, conflicted, created, deleted, modified },
     };
 };

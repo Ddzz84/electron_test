@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ipcRenderer } from "electron";
 import { StatusBar } from "@/components/status-bar";
 import { useStore, useStoreDispatch } from "./components/store/contextStore";
@@ -11,6 +11,8 @@ import {
 import { Sidebar } from "./components/sidebar";
 import { Dashboard } from "./components/dashboard";
 import { ClipLoader } from "react-spinners";
+import { ArrowUpSquareIcon } from "./components/icons";
+import { ModalSelectRepo } from "./components/modalRepo";
 
 console.log(
     "[App.tsx]",
@@ -20,18 +22,19 @@ console.log(
 const App = () => {
     const store = useStore();
     const dispatch = useStoreDispatch();
+    const [newBranch, setNewBranch] = useState<string>();
 
     useEffect(() => listenerGit(dispatch), []);
-    useEffect(() => {
-        if (store?.select_repo) console.log(store?.select_repo);
-    }, [store?.select_repo]);
 
     return (
         <div className="flex flex-row min-h-screen bg-gray-100 text-gray-800">
             <Sidebar />
             <main className="main flex flex-col flex-grow -ml-64 md:ml-0 transition-all duration-150 ease-in">
                 <header className="header bg-white shadow py-4 px-4">
-                    <GlobalCmd disabled={store?.repositories.length === 0} />
+                    <GlobalCmd
+                        disabled={store?.repositories.length === 0}
+                        setBranch={setNewBranch}
+                    />
                 </header>
                 <div className="main-content flex flex-col flex-grow">
                     <div className="text-xs breadcrumbs text-zinc-500 bg-slate-200 px-2 py-0">
@@ -43,6 +46,12 @@ const App = () => {
                 </div>
             </main>
             <StatusBar />
+            {Boolean(newBranch) && (
+                <ModalSelectRepo
+                    newBranch={newBranch}
+                    close={() => setNewBranch(undefined)}
+                />
+            )}
         </div>
     );
 };
@@ -91,21 +100,24 @@ const listenerGit = (dispatch: React.Dispatch<actionStoreType>) => {
         let repo: repositoryType = {
             name: arg.repo_name,
             branchs: arg.branchs,
-            current_branch: arg.branch,
+            current_branch: arg.current_branch,
             status: arg.status,
         };
         if (repo) {
             repo.commits = logs;
             repo.branchs = arg.branchs;
             dispatch({
-                type: "add-log",
+                type: "update-log",
                 payload: { repositories: [repo] },
             });
         }
     });
 };
 
-const GlobalCmd: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+const GlobalCmd: React.FC<{
+    disabled: boolean;
+    setBranch: (s: string) => void;
+}> = ({ disabled, setBranch }) => {
     const store = useStore();
     const [loading, setLoading] = useState("");
 
@@ -138,12 +150,25 @@ const GlobalCmd: React.FC<{ disabled: boolean }> = ({ disabled }) => {
                 </button>
             ))}
 
-            <button disabled={disabled} className="btn btn-xs">
-                new Feature*
+            <button
+                disabled={disabled}
+                className="btn btn-xs btn-primary btn-outline"
+                title="Publish Quality"
+            >
+                <ArrowUpSquareIcon className="w-5 h-5" />
             </button>
-            <button disabled={disabled} className="btn btn-xs">
-                new Hotfix*
-            </button>
+            <div className="btn-group">
+                {["feature", "bugfix", "hotfix"].map((t) => (
+                    <button
+                        key={t}
+                        disabled={disabled}
+                        className="btn btn-xs"
+                        onClick={() => setBranch(t)} // window.select_repositories.showModal()}
+                    >
+                        new <span className="capitalize">{t}</span>*
+                    </button>
+                ))}
+            </div>
         </div>
     );
 };

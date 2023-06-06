@@ -118,6 +118,22 @@ function storeReducer(store: storeType, action: actionStoreType): storeType {
             };
         }
 
+        case "update-log": {
+            if (!action.payload?.repositories?.[0]) return store;
+            let repo = store.repositories.find(
+                (r) => r.name === action.payload?.repositories?.[0].name
+            );
+            return {
+                ...store,
+                repositories: [
+                    ...store.repositories.filter(
+                        (r) => r.name !== action.payload?.repositories?.[0].name
+                    ),
+                    { ...repo, ...action.payload?.repositories?.[0] },
+                ],
+            };
+        }
+
         default: {
             throw Error("Unknown action: " + action.type);
         }

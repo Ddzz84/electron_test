@@ -22,7 +22,6 @@ export const Sidebar: React.FC = () => {
         });
         ipcRenderer.send("choose-folder");
         ipcRenderer.once("select-folder", (_e, d) => {
-            console.log(d);
             dispatch({
                 type: "change-folder",
                 payload: { folder: d.dir, user: d.user },
@@ -46,7 +45,7 @@ export const Sidebar: React.FC = () => {
                         payload: { select_repo },
                     });
                     console.log("click repo", select_repo);
-                    //  ipcRenderer.send("get-log", { repo_name: select_repo });
+                    ipcRenderer.send("get-log", { repo_name: select_repo });
                 }}
             >
                 <span

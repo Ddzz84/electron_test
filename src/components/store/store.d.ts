@@ -46,4 +46,5 @@ export type actionType =
     | "clean-repositories"
     | "select-repo"
     | "add-log"
+    | "update-log"
     | "new-repository";
